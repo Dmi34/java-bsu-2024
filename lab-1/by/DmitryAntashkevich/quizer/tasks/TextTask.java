@@ -9,6 +9,9 @@ import by.DmitryAntashkevich.quizer.generators.PoolTaskGenerator;
  * Можно использовать {@link PoolTaskGenerator}, чтобы задавать задания такого типа.
  */
 public class TextTask implements Task {
+    private final String text;
+    private final String answer;
+
     /**
      * @param text   текст задания
      * @param answer ответ на задание
@@ -30,7 +33,4 @@ public class TextTask implements Task {
     public Result validate(String answer) {
         return this.answer.equals(answer) ? Result.OK : Result.WRONG;
     }
-
-    private final String text;
-    private final String answer;
 }

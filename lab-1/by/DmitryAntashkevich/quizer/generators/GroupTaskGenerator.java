@@ -2,7 +2,7 @@ package by.DmitryAntashkevich.quizer.generators;
 
 import by.DmitryAntashkevich.quizer.Task;
 import by.DmitryAntashkevich.quizer.TaskGenerator;
-import by.DmitryAntashkevich.quizer.exceptions.GeneratorException;
+import by.DmitryAntashkevich.quizer.exceptions.GroupGeneratorException;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -10,6 +10,9 @@ import java.util.Collection;
 import java.util.Random;
 
 public class GroupTaskGenerator<T extends Task> implements TaskGenerator<T> {
+    private final ArrayList<TaskGenerator<? extends T>> generators;
+    private final ArrayList<TaskGenerator<? extends T>> removed = new ArrayList<>();
+
     /**
      * Конструктор с переменным числом аргументов
      *
@@ -48,9 +51,6 @@ public class GroupTaskGenerator<T extends Task> implements TaskGenerator<T> {
                 generators.remove(index);
             }
         }
-        throw new GeneratorException("All generators failed generation");
+        throw new GroupGeneratorException();
     }
-
-    private final ArrayList<TaskGenerator<? extends T>> generators;
-    private final ArrayList<TaskGenerator<? extends T>> removed = new ArrayList<>();
 }

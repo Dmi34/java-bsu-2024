@@ -2,7 +2,7 @@ package by.DmitryAntashkevich.quizer.generators;
 
 import by.DmitryAntashkevich.quizer.Task;
 import by.DmitryAntashkevich.quizer.TaskGenerator;
-import by.DmitryAntashkevich.quizer.exceptions.GeneratorException;
+import by.DmitryAntashkevich.quizer.exceptions.PoolGeneratorException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,6 +11,9 @@ import java.util.Random;
 import java.util.LinkedList;
 
 public class PoolTaskGenerator<T extends Task> implements TaskGenerator<T> {
+    final private ArrayList<T> tasks;
+    final private boolean allowDuplicate;
+
     /**
      * Конструктор с переменным числом аргументов
      *
@@ -46,7 +49,7 @@ public class PoolTaskGenerator<T extends Task> implements TaskGenerator<T> {
     @Override
     public T generate() {
         if (tasks.isEmpty()) {
-            throw new GeneratorException("No tasks to choose from");
+            throw new PoolGeneratorException();
         }
         Random random = new Random();
         int index = random.nextInt(tasks.size());
@@ -56,7 +59,4 @@ public class PoolTaskGenerator<T extends Task> implements TaskGenerator<T> {
         }
         return task;
     }
-
-    final private ArrayList<T> tasks;
-    final private boolean allowDuplicate;
 }

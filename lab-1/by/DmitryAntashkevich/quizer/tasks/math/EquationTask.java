@@ -3,6 +3,8 @@ package by.DmitryAntashkevich.quizer.tasks.math;
 import by.DmitryAntashkevich.quizer.exceptions.InvalidTaskException;
 
 public class EquationTask extends AbstractMathTask {
+    private final boolean isXOnLeft;
+
     public EquationTask(int operand, MathTask.Operation operation, int result, boolean isXOnLeft) {
         super(operand, operation, result);
         this.isXOnLeft = isXOnLeft;
@@ -33,6 +35,4 @@ public class EquationTask extends AbstractMathTask {
         return (isXOnLeft ? "x" + operation.GetSymbol() + toString(lhs)
                 : toString(lhs) + operation.GetSymbol() + "x") + "=" + String.valueOf(rhs);
     }
-
-    private final boolean isXOnLeft;
 }

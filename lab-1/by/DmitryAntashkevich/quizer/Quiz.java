@@ -1,11 +1,21 @@
 package by.DmitryAntashkevich.quizer;
 
+import by.DmitryAntashkevich.quizer.exceptions.NoMoreTasksException;
+import by.DmitryAntashkevich.quizer.exceptions.NonExistentQuestionException;
 import by.DmitryAntashkevich.quizer.exceptions.QuizNotFinishedException;
 
 /**
  * Class, который описывает один тест
  */
 public class Quiz {
+    private final TaskGenerator<? extends Task> generator;
+    private final int taskCount;
+    private int completedTaskCount = 0;
+    private int correctAnswerCount = 0;
+    private int wrongAnswerCount = 0;
+    private int incorrectAnswerCount = 0;
+    private Task currentTask = null;
+
     /**
      * @param generator генератор заданий
      * @param taskCount количество заданий в тесте
@@ -20,6 +30,9 @@ public class Quiz {
      * @see Task
      */
     Task nextTask() {
+        if (isFinished()) {
+            throw new NoMoreTasksException();
+        }
         if (currentTask == null) {
             currentTask = generator.generate();
         }
@@ -32,7 +45,7 @@ public class Quiz {
      */
     Result provideAnswer(String answer) {
         if (currentTask == null) {
-            throw new RuntimeException("Attempt to answer a non-existent question");
+            throw new NonExistentQuestionException();
         }
         Result result = currentTask.validate(answer);
         switch (result) {
@@ -81,16 +94,8 @@ public class Quiz {
      */
     public double getMark() {
         if (!isFinished()) {
-            throw new QuizNotFinishedException("Quiz is not finished yet");
+            throw new QuizNotFinishedException();
         }
         return (double) correctAnswerCount / (double) taskCount;
     }
-
-    private final TaskGenerator<? extends Task> generator;
-    private final int taskCount;
-    private int completedTaskCount = 0;
-    private int correctAnswerCount = 0;
-    private int wrongAnswerCount = 0;
-    private int incorrectAnswerCount = 0;
-    private Task currentTask = null;
 }

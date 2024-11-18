@@ -8,6 +8,11 @@ import java.util.EnumSet;
 import java.util.Random;
 
 public abstract class AbstractMathTaskGenerator<T extends MathTask> implements MathTaskGenerator<T> {
+    protected final int minNumber;
+    protected final int maxNumber;
+    protected final EnumSet<Operation> allowedOperations;
+    private final Random random;
+
     AbstractMathTaskGenerator(
             int minNumber,
             int maxNumber,
@@ -83,9 +88,4 @@ public abstract class AbstractMathTaskGenerator<T extends MathTask> implements M
     protected boolean generateBool() {
         return random.nextInt(2) == 1;
     }
-
-    protected final int minNumber;
-    protected final int maxNumber;
-    protected final EnumSet<Operation> allowedOperations;
-    private final Random random;
 }
