@@ -48,7 +48,7 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
         beanDefinitions.forEach((name, beanInfo) -> {
             graph.put(name, new Node());
             beanInfo.dependencies.forEach(dependency -> {
-                String dependencyName = BeanInfo.getName(dependency.getClass());
+                String dependencyName = BeanInfo.getName(dependency.getType());
                 graph.get(name).children.add(dependencyName);
             });
         });

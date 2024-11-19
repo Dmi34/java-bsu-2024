@@ -1,14 +1,12 @@
 package by.bsu.dependency.context;
 
-import by.bsu.dependency.example.FirstBean;
-import by.bsu.dependency.example.OtherBean;
-import by.bsu.dependency.exceptions.ApplicationContextNotStartedException;
-import by.bsu.dependency.exceptions.NoSuchBeanDefinitionException;
+import by.bsu.dependency.example.*;
+import by.bsu.dependency.exceptions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SimpleApplicationContextTest {
 
@@ -16,7 +14,7 @@ class SimpleApplicationContextTest {
 
     @BeforeEach
     void init() {
-        applicationContext = new SimpleApplicationContext(FirstBean.class, OtherBean.class);
+        applicationContext = new SimpleApplicationContext(FirstBean.class, OtherBean.class, PrototypeBean.class);
     }
 
     @Test
@@ -73,6 +71,7 @@ class SimpleApplicationContextTest {
     void testIsSingletonReturns() {
         assertThat(applicationContext.isSingleton("firstBean")).isTrue();
         assertThat(applicationContext.isSingleton("otherBean")).isTrue();
+        assertThat(applicationContext.isSingleton("counter")).isFalse();
     }
 
     @Test
@@ -87,6 +86,7 @@ class SimpleApplicationContextTest {
     void testIsPrototypeReturns() {
         assertThat(applicationContext.isPrototype("firstBean")).isFalse();
         assertThat(applicationContext.isPrototype("otherBean")).isFalse();
+        assertThat(applicationContext.isPrototype("counter")).isTrue();
     }
 
     @Test
@@ -94,6 +94,43 @@ class SimpleApplicationContextTest {
         assertThrows(
                 NoSuchBeanDefinitionException.class,
                 () -> applicationContext.isPrototype("randomName")
+        );
+    }
+
+    @Test
+    void testPostConstruct() {
+        applicationContext.start();
+        assertThat(((FirstBean) applicationContext.getBean("firstBean")).isPostConstructCalled()).isTrue();
+    }
+
+    @Test
+    void testPrototype() {
+        applicationContext.start();
+
+        assertNotEquals(
+                applicationContext.getBean("counter"),
+                applicationContext.getBean("counter")
+        );
+    }
+
+    @Test
+    void testPrototypePostConstruct() {
+        applicationContext.start();
+
+        for (int i = 0; i < 100; i++) {
+            applicationContext.getBean("counter");
+            applicationContext.getBean(PrototypeBean.class);
+        }
+
+        assertEquals(PrototypeBean.counter, 200);
+    }
+
+    @Test
+    void testDependencyLoops() {
+        var apContext = new SimpleApplicationContext(FirstLoopBean.class, SecondLoopBean.class);
+        assertThrows(
+                DependencyLoopException.class,
+                apContext::start
         );
     }
 }
