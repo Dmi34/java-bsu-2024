@@ -16,7 +16,6 @@ import by.bsu.dependency.exceptions.NoSuchBeanDefinitionException;
 public class HardCodedSingletonApplicationContext extends AbstractApplicationContext {
     private final Map<String, Class<?>> beanDefinitions;
     private final Map<String, Object> beans = new HashMap<>();
-    private ContextStatus status = ContextStatus.NOT_STARTED;
 
     /**
      * ! Класс существует только для базового примера !
@@ -48,11 +47,6 @@ public class HardCodedSingletonApplicationContext extends AbstractApplicationCon
     public void start() {
         beanDefinitions.forEach((beanName, beanClass) -> beans.put(beanName, instantiateBean(beanClass)));
         status = ContextStatus.STARTED;
-    }
-
-    @Override
-    public boolean isRunning() {
-        return status == ContextStatus.STARTED;
     }
 
     @Override
