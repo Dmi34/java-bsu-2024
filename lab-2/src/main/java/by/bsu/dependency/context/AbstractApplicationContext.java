@@ -45,10 +45,13 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
                         BeanInfo::new
                 ));
 
-        beanDefinitions.forEach((name, beanInfo) -> beanInfo.dependencies.forEach(dependency -> {
-            String dependencyName = BeanInfo.getName(dependency.getClass());
-            graph.get(name).children.add(dependencyName);
-        }));
+        beanDefinitions.forEach((name, beanInfo) -> {
+            graph.put(name, new Node());
+            beanInfo.dependencies.forEach(dependency -> {
+                String dependencyName = BeanInfo.getName(dependency.getClass());
+                graph.get(name).children.add(dependencyName);
+            });
+        });
     }
 
     @Override
@@ -83,22 +86,10 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
 
     @Override
     public Object getBean(String name) {
-        if (!isRunning()) {
-            throw new ApplicationContextNotStartedException();
-        }
         if (!containsBean(name)) {
             throw new NoSuchBeanDefinitionException(name);
         }
-
-        if (isSingleton(name)) {
-            return singletons.get(name);
-        }
-
-        BeanInfo beanInfo = beanDefinitions.get(name);
-        var instance = instantiateBean(beanInfo);
-        injectDependencies(beanInfo, instance);
-        executePostConstruct(beanInfo, instance);
-        return null;
+        return getBeanInstance(name);
     }
 
     @Override
@@ -143,6 +134,18 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
         }
     }
 
+    private Object getBeanInstance(String name) {
+        if (isSingleton(name)) {
+            return singletons.get(name);
+        }
+
+        BeanInfo beanInfo = beanDefinitions.get(name);
+        var instance = instantiateBean(beanInfo);
+        injectDependencies(beanInfo, instance);
+        executePostConstruct(beanInfo, instance);
+        return instance;
+    }
+
     private Object instantiateBean(BeanInfo beanInfo) {
         try {
             return beanInfo.beanClass.getConstructor().newInstance();
@@ -156,7 +159,7 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
         try {
             for (Field field : beanInfo.dependencies) {
                 field.setAccessible(true);
-                field.set(bean, getBean(field.getType()));
+                field.set(bean, getBeanInstance(BeanInfo.getName(field.getType())));
             }
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);

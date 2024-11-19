@@ -33,7 +33,9 @@ public class BeanInfo {
     }
 
     public static String getName(Class<?> clazz) {
-        if (clazz.isAnnotationPresent(Bean.class)) return clazz.getAnnotation(Bean.class).name();
+        if (clazz.isAnnotationPresent(Bean.class) && !clazz.getAnnotation(Bean.class).name().isEmpty()) {
+            return clazz.getAnnotation(Bean.class).name();
+        }
         String name = clazz.getSimpleName();
         name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
         return name;
