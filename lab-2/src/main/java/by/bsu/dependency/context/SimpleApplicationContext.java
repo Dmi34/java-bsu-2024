@@ -1,15 +1,6 @@
 package by.bsu.dependency.context;
 
-import by.bsu.dependency.annotation.Bean;
-import by.bsu.dependency.annotation.BeanScope;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 public class SimpleApplicationContext extends AbstractApplicationContext {
-
     /**
      * Создает контекст, содержащий классы, переданные в параметре.
      * <br/>

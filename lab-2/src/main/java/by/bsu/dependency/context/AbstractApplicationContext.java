@@ -2,6 +2,7 @@ package by.bsu.dependency.context;
 
 import by.bsu.dependency.annotation.BeanScope;
 import by.bsu.dependency.exceptions.ApplicationContextNotStartedException;
+import by.bsu.dependency.exceptions.DependencyLoopException;
 import by.bsu.dependency.exceptions.NoSuchBeanDefinitionException;
 
 import java.lang.reflect.Field;
@@ -44,9 +45,9 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
                         BeanInfo::new
                 ));
 
-        beanDefinitions.forEach((beanName, beanInfo) -> beanInfo.dependencies.forEach(dependency -> {
+        beanDefinitions.forEach((name, beanInfo) -> beanInfo.dependencies.forEach(dependency -> {
             String dependencyName = BeanInfo.getName(dependency.getClass());
-            graph.get(beanName).children.add(dependencyName);
+            graph.get(name).children.add(dependencyName);
         }));
     }
 
@@ -54,15 +55,15 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
     public void start() {
         validateDependencyGraph();
 
-        beanDefinitions.forEach((beanName, beanInfo) -> {
+        beanDefinitions.forEach((name, beanInfo) -> {
             if (beanInfo.scope == BeanScope.SINGLETON) {
-                singletons.put(beanName, instantiateBean(beanInfo));
+                singletons.put(name, instantiateBean(beanInfo));
             }
         });
 
-        singletons.forEach((beanName, instance) -> injectDependencies(beanDefinitions.get(beanName), instance));
+        singletons.forEach((name, instance) -> injectDependencies(beanDefinitions.get(name), instance));
 
-        singletons.forEach((beanName, instance) -> executePostConstruct(beanDefinitions.get(beanName), instance));
+        singletons.forEach((name, instance) -> executePostConstruct(beanDefinitions.get(name), instance));
 
         status = ContextStatus.STARTED;
     }
@@ -130,7 +131,7 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
     private void dfs(String name) {
         Node node = graph.get(name);
         if (node.status == NodeStatus.ACTIVE) {
-            throw new RuntimeException("Detected loop in dependency graph");
+            throw new DependencyLoopException(name);
         }
 
         if (node.status == NodeStatus.NOT_VISITED) {
