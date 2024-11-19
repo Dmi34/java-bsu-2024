@@ -29,7 +29,7 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
         public NodeStatus status = NodeStatus.NOT_VISITED;
     }
 
-    protected final Map<String, BeanInfo> beanDefinitions;
+    protected final Map<String, BeanInfo> beanDefinitions = new HashMap<>();
     protected final Map<String, Object> singletons = new HashMap<>();
     protected ContextStatus status = ContextStatus.NOT_STARTED;
     private final Map<String, Node> graph = new HashMap<>();
@@ -39,11 +39,11 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
     }
 
     AbstractApplicationContext(List<Class<?>> beanClasses) {
-        this.beanDefinitions = beanClasses.stream().collect(
-                Collectors.toMap(
-                        BeanInfo::getName,
-                        BeanInfo::new
-                ));
+        init(beanClasses);
+    }
+
+    protected void init(List<Class<?>> beanClasses) {
+        beanClasses.forEach(clazz -> beanDefinitions.put(BeanInfo.getName(clazz), new BeanInfo(clazz)));
 
         beanDefinitions.forEach((name, beanInfo) -> {
             graph.put(name, new Node());

@@ -1,10 +1,10 @@
-package by.bsu.dependency.example;
+package by.bsu.dependency.test.loop;
 
 import by.bsu.dependency.annotation.Bean;
 import by.bsu.dependency.annotation.BeanScope;
 import by.bsu.dependency.annotation.Inject;
 
-@Bean(name = "loop2", scope = BeanScope.PROTOTYPE)
+@Bean(scope = BeanScope.PROTOTYPE)
 public class SecondLoopBean {
 
     @Inject
