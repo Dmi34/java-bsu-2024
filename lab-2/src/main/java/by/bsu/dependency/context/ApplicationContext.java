@@ -1,5 +1,7 @@
 package by.bsu.dependency.context;
 
+import by.bsu.dependency.exceptions.*;
+
 public interface ApplicationContext {
 
     /**
