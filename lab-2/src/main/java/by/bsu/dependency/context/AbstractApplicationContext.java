@@ -1,12 +1,12 @@
 package by.bsu.dependency.context;
 
-import by.bsu.dependency.annotation.Bean;
 import by.bsu.dependency.annotation.BeanScope;
 import by.bsu.dependency.exceptions.ApplicationContextNotStartedException;
 import by.bsu.dependency.exceptions.NoSuchBeanDefinitionException;
-import jdk.jshell.spi.ExecutionControl;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,7 +20,7 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
     private enum NodeStatus {
         NOT_VISITED,
         VISITED,
-        USED
+        ACTIVE
     }
 
     private static class Node {
@@ -29,6 +29,7 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
     }
 
     protected final Map<String, BeanInfo> beanDefinitions;
+    protected final Map<String, Object> singletons = new HashMap<>();
     protected ContextStatus status = ContextStatus.NOT_STARTED;
     private final Map<String, Node> graph = new HashMap<>();
 
@@ -42,23 +43,26 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
                         BeanInfo::getName,
                         BeanInfo::new
                 ));
+
+        beanDefinitions.forEach((beanName, beanInfo) -> beanInfo.dependencies.forEach(dependency -> {
+            String dependencyName = BeanInfo.getName(dependency.getClass());
+            graph.get(beanName).children.add(dependencyName);
+        }));
     }
 
     @Override
     public void start() {
         validateDependencyGraph();
 
-        beanDefinitions.values().stream()
-                .filter(beanInfo -> beanInfo.scope == BeanScope.SINGLETON)
-                .forEach(this::instantiateBean);
+        beanDefinitions.forEach((beanName, beanInfo) -> {
+            if (beanInfo.scope == BeanScope.SINGLETON) {
+                singletons.put(beanName, instantiateBean(beanInfo));
+            }
+        });
 
-        beanDefinitions.values().stream()
-                .filter(beanInfo -> beanInfo.scope == BeanScope.SINGLETON)
-                .forEach(this::injectDependencies);
+        singletons.forEach((beanName, instance) -> injectDependencies(beanDefinitions.get(beanName), instance));
 
-        beanDefinitions.values().stream()
-                .filter(beanInfo -> beanInfo.scope == BeanScope.SINGLETON)
-                .forEach(this::postConstruct);
+        singletons.forEach((beanName, instance) -> executePostConstruct(beanDefinitions.get(beanName), instance));
 
         status = ContextStatus.STARTED;
     }
@@ -84,10 +88,15 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
         if (!containsBean(name)) {
             throw new NoSuchBeanDefinitionException(name);
         }
+
         if (isSingleton(name)) {
-            return beanDefinitions.get(name).instance;
+            return singletons.get(name);
         }
-        // TODO
+
+        BeanInfo beanInfo = beanDefinitions.get(name);
+        var instance = instantiateBean(beanInfo);
+        injectDependencies(beanInfo, instance);
+        executePostConstruct(beanInfo, instance);
         return null;
     }
 
@@ -113,13 +122,6 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
     }
 
     private void validateDependencyGraph() {
-        beanDefinitions.forEach((beanName, beanInfo) -> {
-            List<String> children = beanInfo.dependencies.stream()
-                    .map(field -> BeanInfo.getName(field.getClass()))
-                    .toList();
-            graph.get(beanName).children.addAll(children);
-        });
-
         if (!graph.isEmpty()) {
             dfs(graph.keySet().iterator().next());
         }
@@ -127,15 +129,16 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
 
     private void dfs(String name) {
         Node node = graph.get(name);
-        switch (node.status) {
-            case USED -> throw new RuntimeException("Detected loop in dependency graph");
-            case NOT_VISITED -> {
-                node.status = NodeStatus.USED;
-                for (String dependency : node.children) {
-                    dfs(dependency);
-                }
-                node.status = NodeStatus.VISITED;
+        if (node.status == NodeStatus.ACTIVE) {
+            throw new RuntimeException("Detected loop in dependency graph");
+        }
+
+        if (node.status == NodeStatus.NOT_VISITED) {
+            node.status = NodeStatus.ACTIVE;
+            for (String dependency : node.children) {
+                dfs(dependency);
             }
+            node.status = NodeStatus.VISITED;
         }
     }
 
@@ -148,11 +151,27 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
         }
     }
 
-    private void injectDependencies(BeanInfo beanInfo) {
-        // TODO
+    private void injectDependencies(BeanInfo beanInfo, Object bean) {
+        try {
+            for (Field field : beanInfo.dependencies) {
+                field.setAccessible(true);
+                field.set(bean, getBean(field.getType()));
+            }
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private void postConstruct(BeanInfo beanInfo) {
-        // TODO
+    private void executePostConstruct(BeanInfo beanInfo, Object bean) {
+        if (beanInfo.postConstruct.isEmpty()) {
+            return;
+        }
+        Method postConstruct = beanInfo.postConstruct.get();
+        try {
+            postConstruct.setAccessible(true);
+            postConstruct.invoke(bean);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
